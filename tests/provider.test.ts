@@ -1,7 +1,13 @@
-import { describe, expect, it } from 'vitest';
-import { parsePrdResponse } from '../apps/api/src/provider';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { AnthropicProvider, parsePrdResponse } from '../apps/api/src/provider';
 import { createDraft } from '../packages/shared/generator';
 import { templates } from '../packages/shared/templates';
+
+const { streamMock } = vi.hoisted(() => ({ streamMock: vi.fn() }));
+vi.mock('@anthropic-ai/sdk', () => ({ default: class { messages = { stream: streamMock }; } }));
+function fakeStream(text: string, stopReason: string) {
+  return { on(_event: string, onText: (chunk: string) => void) { onText(text); }, async finalMessage() { return { stop_reason: stopReason }; } };
+}
 
 describe('respons PRD provider', () => {
   const draft = createDraft(templates[0].input);
@@ -21,5 +27,38 @@ describe('respons PRD provider', () => {
     const unsafe = structuredClone(draft);
     unsafe.sections.find(section => section.id === 'diagrams')!.content += '\n```mermaid\nflowchart LR\nclick A "javascript:alert(1)"\n```';
     expect(() => parsePrdResponse('```json\n' + JSON.stringify(unsafe) + '\n```')).toThrow('Diagram mengandung sintaks');
+  });
+});
+
+describe('pemulihan jawaban AI terpotong', () => {
+  const input = { ...templates[0].input, idea: 'website umkm untuk laundry', detail: 'Lengkap' as const };
+  const json = JSON.stringify(createDraft(input));
+  beforeEach(() => streamMock.mockReset());
+  it('mengulang JSON dari awal hanya saat batas output tercapai, dalam anggaran 10.000 token', async () => {
+    streamMock.mockReturnValueOnce(fakeStream('{"title":"terpotong', 'max_tokens')).mockReturnValueOnce(fakeStream(json, 'end_turn'));
+    const result = await new AnthropicProvider('test-key', 'test-model').generate(input, () => {}, new AbortController().signal);
+    expect(result.title).toBe(createDraft(input).title);
+    expect(streamMock).toHaveBeenCalledTimes(2);
+    expect(streamMock.mock.calls.reduce((sum, [params]) => sum + params.max_tokens, 0)).toBeLessThanOrEqual(10000);
+    expect(streamMock.mock.calls[1][0].messages).toEqual([{ role: 'user', content: JSON.stringify(input) }]);
+  });
+  it('berhenti setelah satu pemulihan dan melaporkan batas output dengan tepat', async () => {
+    streamMock.mockImplementation(() => fakeStream('{"title":"terpotong', 'max_tokens'));
+    await expect(new AnthropicProvider('test-key', 'test-model').generate(input, () => {}, new AbortController().signal)).rejects.toMatchObject({ code: 'AI_OUTPUT_LIMIT', stopReason: 'max_tokens' });
+    expect(streamMock).toHaveBeenCalledTimes(2);
+  });
+  it('tidak mengulang respons yang sudah lengkap atau penolakan provider', async () => {
+    streamMock.mockReturnValueOnce(fakeStream(json, 'end_turn'));
+    await new AnthropicProvider('test-key', 'test-model').generate(input, () => {}, new AbortController().signal);
+    expect(streamMock).toHaveBeenCalledTimes(1);
+    streamMock.mockReset().mockReturnValueOnce(fakeStream('', 'refusal'));
+    await expect(new AnthropicProvider('test-key', 'test-model').generate(input, () => {}, new AbortController().signal)).rejects.toMatchObject({ code: 'AI_REFUSED' });
+    expect(streamMock).toHaveBeenCalledTimes(1);
+  });
+  it('pembatalan pengguna menghentikan pemulihan', async () => {
+    const controller = new AbortController();
+    streamMock.mockReturnValueOnce(fakeStream('potongan', 'max_tokens'));
+    await expect(new AnthropicProvider('test-key', 'test-model').generate(input, () => controller.abort(), controller.signal)).rejects.toMatchObject({ name: 'AbortError' });
+    expect(streamMock).toHaveBeenCalledTimes(1);
   });
 });

@@ -6,6 +6,7 @@ import { memoryRepository } from './memory-repository';
 import { createDraft } from '../packages/shared/generator';
 import { templates } from '../packages/shared/templates';
 import type { Plan } from '../packages/shared/schema';
+import { GenerationError } from '../apps/api/src/generation-error';
 const origin = 'http://127.0.0.1:5178';
 let app: FastifyInstance;
 const headers = { origin };
@@ -53,6 +54,14 @@ describe('API privat', () => {
     app = await createApp({ repository: memoryRepository(), origin, provider: { async generate() { throw new Error('failure'); } } });
     const cookie = await register('error@example.test'); const response = await generate(cookie);
     expect(response.body).toContain('event: error'); expect(response.body).not.toContain('event: complete');
+    expect((await app.inject({ url: '/api/plans', headers: { cookie } })).json()).toEqual([]);
+  });
+  it('menampilkan alasan batas output melalui SSE tanpa menyebut koneksi atau menyimpan draf parsial', async () => {
+    await app.close();
+    app = await createApp({ repository: memoryRepository(), origin, provider: { async generate() { throw new GenerationError('AI_OUTPUT_LIMIT', 'Dokumen terlalu panjang. Pilih detail Ringkas.', 'max_tokens'); } } });
+    const cookie = await register('limit@example.test'); const response = await generate(cookie);
+    expect(response.body).toContain('AI_OUTPUT_LIMIT'); expect(response.body).toContain('Pilih detail Ringkas');
+    expect(response.body).not.toContain('Periksa koneksi'); expect(response.body).not.toContain('event: complete');
     expect((await app.inject({ url: '/api/plans', headers: { cookie } })).json()).toEqual([]);
   });
 });

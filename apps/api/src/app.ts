@@ -11,6 +11,7 @@ import { credentialsSchema, planInputSchema, documentSchema, safeFilename, toMar
 import type { Repository } from './repository';
 import type { LlmProvider } from './provider';
 import { sessionAuth } from './auth';
+import { GenerationError, generationFailure } from './generation-error';
 export interface AppOptions { repository: Repository; provider: LlmProvider; origin: string; secureCookies?: boolean; dailyLimit?: number; health?: () => Promise<void>; logger?: boolean; cors?: boolean; }
 export async function createApp(options: AppOptions) {
   const app = Fastify({ logger: options.logger ?? false, bodyLimit: 24000, requestTimeout: 150000 });
@@ -78,13 +79,21 @@ export async function createApp(options: AppOptions) {
       const controller = new AbortController(); const abort = () => controller.abort(); reply.raw.on('close', abort);
       const emit = (event: string, data: unknown) => { if (!reply.raw.destroyed) reply.raw.write('event: ' + event + '\ndata: ' + JSON.stringify(data) + '\n\n'); };
       const heartbeat = setInterval(() => { if (!reply.raw.destroyed) reply.raw.write(': heartbeat\n\n'); }, 15000);
+      let stage: 'provider' | 'storage' = 'provider';
       try {
         const doc = documentSchema.parse(await options.provider.generate(input, text => emit('delta', { text }), controller.signal));
         if (controller.signal.aborted) return;
         const now = new Date().toISOString();
         const plan: Plan = { ...doc, id: randomUUID(), input, createdAt: now, updatedAt: now, archived: false, mode: 'ai' };
+        stage = 'storage';
         await repo.savePlan(user.id, plan); emit('complete', plan);
-      } catch (error) { request.log.error(error); if (!controller.signal.aborted) emit('error', { code: 'GENERATION_FAILED', message: 'Rancangan belum berhasil disusun. Periksa koneksi dan coba lagi.' }); }
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          const failure = generationFailure(error, stage);
+          request.log.error({ event: 'prd_generation_failed', stage, code: failure.code, stopReason: error instanceof GenerationError ? error.stopReason : undefined, errorType: error instanceof Error ? error.name : 'Unknown' }, failure.message);
+          emit('error', failure);
+        }
+      }
       finally { clearInterval(heartbeat); active.delete(user.id); reply.raw.off('close', abort); reply.raw.end(); }
     });
   });
