@@ -2,6 +2,8 @@
 
 Website generator draf PRD berbahasa Indonesia dengan tampilan minimalis abu-abu.
 
+**Aplikasi live:** [elprd-rancang.netlify.app](https://elprd-rancang.netlify.app). Client React dan API Fastify berjalan pada Netlify; database PostgreSQL berada di Supabase. Deployment terhubung ke branch `main` repositori ini.
+
 ## Jalankan client
 Butuh Node.js 24 atau lebih baru.
 ```sh
@@ -38,7 +40,7 @@ Untuk produksi: deploy client dan server HTTPS di domain induk yang sama agar co
 - docs — keputusan, arsitektur, API, status, video.
 
 ## Batas versi ini
-Versi Sites yang dipublikasikan adalah client statis dalam mode template. Server Node/PostgreSQL disediakan sebagai source dan belum tersambung ke hosting ini. Pengujian Anthropic nyata memerlukan akun/kunci pengguna. Streaming AI menampilkan progres penerimaan; dokumen tampil setelah JSON lengkap lolos validasi.
+Deployment Netlify memakai mode AI dengan database Supabase dan Netlify AI Gateway. Versi Sites sebelumnya tetap berupa client statis dalam mode template. Streaming AI menampilkan progres penerimaan; dokumen tampil setelah JSON lengkap lolos validasi.
 
 Belum ada penagihan, pemulihan password/email verification, versi historis sebuah plan, sinkronisasi antarperangkat pada mode lokal, atau model picker. Daftar server dibatasi 100 plan terbaru; pagination penuh belum diimplementasikan. Mermaid dirender strict di client dengan fallback kode; server membatasi konten berbahaya tetapi belum memvalidasi seluruh grammar Mermaid.
 

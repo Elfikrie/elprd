@@ -70,7 +70,7 @@ Indeks: sessions.expires_at; plans(user_id, created_at DESC). Migrasi dijalankan
 Minimal delapan bagian wajib: overview, goals, users, features, architecture, diagrams, tasks, questions. Mode template membuat 11 bagian; mode AI menerima 8–16 bagian dengan ID unik. Semua asumsi ditandai. Markdown mentah tidak mengeksekusi HTML. Mermaid strict memakai fallback kode bila parsing gagal.
 
 ## Batas arsitektur
-- Node tidak dihosting di Sites statis; perlu deployment terpisah.
+- Produksi: client React di CDN Netlify, Fastify di Netlify Server pada `/api/*`, PostgreSQL di Supabase, dan Anthropic melalui Netlify AI Gateway. Versi Sites lama hanya client statis.
 - Di versi ini JSONB menyimpan satu versi plan. Riwayat versi belum dibuat.
 - Otorisasi berada di server/repository, tidak mengandalkan tombol client.
 - Satu proses Node menyimpan pembatas satu generation aktif/pengguna di memori; kuota harian tetap atomik di database.
