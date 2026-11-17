@@ -1,0 +1,26 @@
+// Navigasi dan informasi penyimpanan; mode lokal selalu diungkapkan pada pengguna.
+import { useState } from 'react';
+import { Link, NavLink } from 'react-router-dom';
+import { Layers, Plus, ArrowUpRight, CircleHelp, Monitor, BookOpen, History, LayoutGrid, LogOut } from 'lucide-react';
+import Modal from './Modal';
+import { API_URL } from '../api';
+import { useWorkspace } from '../context';
+export default function Layout({ children }: { children: React.ReactNode }) {
+  const [dialog, setDialog] = useState<'help' | 'storage' | null>(null);
+  const [register, setRegister] = useState(false); const [email, setEmail] = useState(''); const [password, setPassword] = useState(''); const [error, setError] = useState(''); const [busy, setBusy] = useState(false);
+  const { user, authenticate, logout, toast } = useWorkspace();
+  return <div className="app-shell"><a className="skip-link" href="#main">Langsung ke konten</a>
+    <header className="site-header"><div className="header-inner">
+      <Link to="/" className="brand" aria-label="Rancang beranda"><span className="brand-mark"><Layers size={22} strokeWidth={1.6}/></span>rancang<span className="brand-dot">.</span></Link>
+      <nav className="main-nav" aria-label="Navigasi utama"><NavLink to="/" end><LayoutGrid size={15}/>Beranda</NavLink><NavLink to="/template"><BookOpen size={15}/>Template</NavLink><NavLink to="/riwayat"><History size={15}/>Riwayat</NavLink></nav>
+      <div className="header-actions"><button className="local-badge" onClick={() => setDialog('storage')}><span className="status-dot"/>{API_URL ? (user ? 'Akun saya' : 'Masuk') : 'Mode lokal'}</button><button className="icon-button help-button" aria-label="Buka panduan" onClick={() => setDialog('help')}><CircleHelp size={19}/></button><Link className="button small dark" to="/?baru=1"><Plus size={16}/>Plan baru</Link></div>
+    </div></header>
+    <main id="main">{children}</main>
+    <footer className="site-footer"><Link to="/" className="footer-brand"><Layers size={16}/>rancang.</Link><span>Ruang untuk ide. Struktur untuk mulai.</span><button onClick={() => setDialog('help')}>Panduan singkat <ArrowUpRight size={13}/></button></footer>
+    {dialog === 'help' && <Modal title="Dari ide ke rencana." onClose={() => setDialog(null)}><p className="muted">Mulai dari hal yang ingin kamu bangun. Tidak perlu langsung sempurna.</p><ol className="guide-list"><li><strong>Ceritakan idemu</strong><p>Jelaskan masalah, pengguna, dan fitur utama. Tambahkan detail melalui “Atur kebutuhan”.</p></li><li><strong>Tinjau rancangan</strong><p>Baca ringkasan, user story, arsitektur, diagram, dan urutan tugas. Konfirmasi semua asumsi.</p></li><li><strong>Bawa ke proses pengembangan</strong><p>Salin dokumen atau unduh .md untuk editor dan AI coding agent pilihanmu.</p></li></ol><div className="info-panel"><Monitor size={19}/><p>{API_URL ? 'Mode AI menggunakan server terpisah. Masuk untuk menyimpan dan membuat plan.' : 'Mode lokal menggunakan template terstruktur, bukan model AI. Plan tersimpan hanya di browser ini. Unduh dokumen untuk membuat cadangan.'}</p></div></Modal>}
+    {dialog === 'storage' && <Modal title={API_URL ? (user ? 'Akun ruang kerja' : register ? 'Buat akun' : 'Masuk ke Rancang') : 'Ruang kerja di browsermu'} onClose={() => setDialog(null)}>
+      {!API_URL ? <><div className="modal-feature-icon"><Monitor size={28}/></div><p>Rancang saat ini berjalan dalam <strong>mode lokal</strong>. Kamu bisa membuat draf berbasis template tanpa akun.</p><div className="info-rows"><div><span>Penyusunan dokumen</span><strong>Template terstruktur</strong></div><div><span>Penyimpanan</span><strong>Browser perangkat ini</strong></div><div><span>Unduh Markdown</span><strong>Tersedia</strong></div></div><p className="muted text-small">Menghapus data browser juga menghapus riwayat. Simpan salinan .md untuk cadangan. Mode AI memerlukan server dan koneksi penyedia AI.</p><button className="button dark full" onClick={() => setDialog(null)}>Mengerti</button></> : user ? <><p>Kamu masuk sebagai <strong>{user}</strong>.</p><button className="button" onClick={() => void logout().then(() => setDialog(null)).catch(e => toast(e.message))}><LogOut size={16}/>Keluar</button></> : <form className="auth-form" onSubmit={async e => { e.preventDefault(); setBusy(true); setError(''); try { await authenticate(email, password, register); setDialog(null); } catch (err) { setError(err instanceof Error ? err.message : 'Gagal masuk.'); } finally { setBusy(false); } }}><label>Email<input required type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email"/></label><label>Kata sandi<input required type="password" minLength={10} maxLength={128} value={password} onChange={e => setPassword(e.target.value)} autoComplete={register ? 'new-password' : 'current-password'}/></label>{error && <p className="form-error" role="alert">{error}</p>}<button disabled={busy} className="button dark full">{busy ? 'Memproses…' : register ? 'Buat akun' : 'Masuk'}</button><button type="button" className="text-button" onClick={() => setRegister(!register)}>{register ? 'Sudah punya akun? Masuk' : 'Belum punya akun? Daftar'}</button></form>}
+    </Modal>}
+  </div>;
+}
+
