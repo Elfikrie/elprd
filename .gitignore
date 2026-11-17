@@ -8,3 +8,4 @@ artifacts/
 .netlify/
 .env.*
 !.env.example
+supabase/.temp/

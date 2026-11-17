@@ -1,10 +1,28 @@
 // Uji migrasi di PostgreSQL WASM serta konfigurasi pool tanpa menghubungi layanan cloud.
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 import { describe, expect, it } from 'vitest';
 import { PGlite } from '@electric-sql/pglite';
 import { connectionOptions } from '../apps/api/src/db/connection';
 import { runtimeSchema } from '../apps/api/src/runtime';
 describe('deployment Netlify dan Supabase', () => {
+  it('membatasi akun backend dan menolak akses publik pada schema hosted', async () => {
+    const db = new PGlite();
+    try {
+      await db.exec("create role anon; create role authenticated; create function public.rls_auto_enable() returns event_trigger language plpgsql as $$begin return; end;$$");
+      const directory = new URL('../supabase/migrations/', import.meta.url);
+      for (const file of (await readdir(directory)).filter(name => name.endsWith('.sql')).sort()) {
+        await db.exec(await readFile(new URL(file, directory), 'utf8'));
+      }
+      await db.exec('set role rancang_api');
+      const health = await db.query<{ name: string }>('select name from rancang.schema_migrations');
+      expect(health.rows[0].name).toBe('0001_initial');
+      await db.exec("insert into rancang.users(id,email,password_hash) values ('f9abc273-5de4-4e29-b437-f636d18b5eb1','test@example.invalid','test-only')");
+      await expect(db.exec('create table rancang.forbidden(id integer)')).rejects.toThrow();
+      await expect(db.exec('delete from rancang.schema_migrations')).rejects.toThrow();
+      await db.exec('reset role; set role anon');
+      await expect(db.query('select * from rancang.users')).rejects.toThrow();
+    } finally { await db.close(); }
+  }, 20000);
   it('membuat schema terisolasi, foreign key, indeks dan RLS', async () => {
     const db = new PGlite();
     try {
