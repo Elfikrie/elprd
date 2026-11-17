@@ -10,7 +10,7 @@ Tanggal pengerjaan: 17 November 2026.
 
 ## Hasil aktual
 - TypeScript strict dan build produksi: lulus. Vite memperingatkan chunk Mermaid besar; renderer dimuat dinamis.
-- Unit/integrasi: 21/21 lulus pada 5 berkas, termasuk migrasi PostgreSQL WASM, pembatasan role, regresi JSON AI berpagar Markdown, pemulihan output terpotong, anggaran token, pembatalan, dan pesan error SSE.
+- Unit/integrasi: 22/22 lulus pada 5 berkas, termasuk migrasi PostgreSQL WASM, pembatasan role, regresi JSON AI berpagar Markdown, kelanjutan output terpotong, kompatibilitas prefill, anggaran token, pembatalan, dan pesan error SSE.
 - Browser Edge headless: 15 alur lulus; desktop 1440×1100 dan mobile 375×812. Tidak ada pageerror atau overflow horizontal.
 - Diagram: tiga diagram template ter-render; unduhan studio-abu.md memuat judul dan blok Mermaid.
 - Persistensi setelah refresh, pencarian, arsip/pulihkan, pembatalan hapus, hapus, filter template, dan dialog Escape: lulus.

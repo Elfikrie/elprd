@@ -22,7 +22,7 @@ Fitur: input ide dan kebutuhan, enam template, pilihan platform/detail, 11 bagia
 5. Client membaca env dari apps/web: buat apps/web/.env.local berisi `VITE_API_URL=http://127.0.0.1:3001`, lalu mulai ulang client.
 6. Klik Masuk, buat akun, dan susun plan.
 
-Model harus tersedia pada akun Anthropic. API key tidak disertakan. Biaya API bergantung model/kuota akun. Server membatasi 10 percobaan generate/hari/pengguna (UTC), 3 permintaan/menit/IP, dan 10.000 token keluaran per percobaan. Kegagalan tetap memakai kuota untuk membatasi biaya nyata.
+Model harus tersedia pada akun Anthropic. API key tidak disertakan. Biaya API bergantung model/kuota akun. Server membatasi 10 percobaan generate/hari/pengguna (UTC), 3 permintaan/menit/IP, dan total 16.000 token keluaran per percobaan, termasuk satu kelanjutan bila diperlukan pada Claude 4.5. Kegagalan tetap memakai kuota untuk membatasi biaya nyata.
 
 Untuk produksi: deploy client dan server HTTPS di domain induk yang sama agar cookie SameSite=Lax bekerja. WEB_ORIGIN harus tepat sama dengan origin client; set NODE_ENV=production. Gunakan password database produksi sendiri. Jangan gunakan kredensial Compose lokal di internet. Dockerfile server: `docker build -f apps/api/Dockerfile -t rancang-api .`.
 

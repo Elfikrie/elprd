@@ -23,17 +23,20 @@ export class AnthropicProvider implements LlmProvider {
   constructor(private key: string | undefined, private model: string, private baseURL?: string) {}
   async generate(input: PlanInput, onDelta: (text: string) => void, signal: AbortSignal): Promise<PrdDocument> {
     this.client ??= new Anthropic({ ...(this.key ? { apiKey: this.key } : {}), ...(this.baseURL ? { baseURL: this.baseURL } : {}), timeout: 120000, maxRetries: 0 });
-    // Satu generasi tetap dibatasi maksimal 10.000 token, termasuk satu pemulihan.
-    // Ulangi JSON dari awal agar fragmen terpotong tidak digabung menjadi dokumen rusak.
-    for (const [attempt, maxTokens] of [6000, 4000].entries()) {
+    // Claude 4.5 mendukung prefill untuk melanjutkan JSON dari titik terpotong.
+    // Model baru tanpa prefill mendapat satu anggaran penuh.
+    const supportsPrefill = /^claude-(?:sonnet|opus|haiku)-4-5(?:-|$)/.test(this.model);
+    const budgets = supportsPrefill ? [10000, 6000] : [16000];
+    let text = '';
+    for (const [attempt, maxTokens] of budgets.entries()) {
       signal.throwIfAborted();
-      const recovery = attempt === 1 ? '\nPenyusunan sebelumnya terpotong. Susun ulang satu JSON lengkap dari awal dengan bahasa padat, maksimal 700 kata di luar diagram. Pertahankan semua bagian wajib dan empat diagram kecil (maksimal 12 baris per diagram). Jangan mengulang atau membahas respons sebelumnya.' : '';
-      const stream = this.client.messages.stream({ model: this.model, max_tokens: maxTokens, system: PRD_PROMPT + recovery, messages: [{ role: 'user', content: JSON.stringify(input) }] }, { signal });
-      let text = '';
+      const messages: Anthropic.MessageParam[] = [{ role: 'user', content: JSON.stringify(input) }];
+      if (attempt > 0) { text = text.trimEnd(); messages.push({ role: 'assistant', content: text }); }
+      const stream = this.client.messages.stream({ model: this.model, max_tokens: maxTokens, system: PRD_PROMPT, messages }, { signal });
       stream.on('text', chunk => { text += chunk; onDelta(chunk); });
       const message = await stream.finalMessage();
       signal.throwIfAborted();
-      if (message.stop_reason === 'max_tokens' && attempt === 0) continue;
+      if (message.stop_reason === 'max_tokens' && attempt + 1 < budgets.length && text.trim()) continue;
       if (message.stop_reason === 'max_tokens') throw new GenerationError('AI_OUTPUT_LIMIT', 'Dokumen terlalu panjang untuk diselesaikan. Pilih detail Ringkas atau persempit fitur yang diminta.', message.stop_reason);
       if (message.stop_reason === 'refusal') throw new GenerationError('AI_REFUSED', 'AI tidak dapat menyusun rancangan untuk permintaan ini. Ubah deskripsi kebutuhan produk lalu coba lagi.', message.stop_reason);
       if (message.stop_reason !== 'end_turn') throw new GenerationError('AI_INCOMPLETE', 'AI berhenti sebelum dokumen selesai. Silakan coba lagi.', message.stop_reason);
