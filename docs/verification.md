@@ -22,8 +22,8 @@ Tanggal pengerjaan: 17 November 2026.
 - Build Netlify berjalan di Linux dengan Node 24 dan terhubung ke branch main GitHub.
 - Supabase nyata: koneksi TLS, health, CRUD, foreign-key cascade, penolakan DDL role runtime, dan rollback data uji lulus. Security dan health advisor tidak melaporkan temuan.
 - HTTP produksi: halaman utama 200, health database ok, akses tanpa sesi 401, Origin asing 403, pendaftaran dan login berhasil; cookie Secure/HttpOnly/SameSite=Lax dan pencabutan sesi saat logout terverifikasi.
-- AI nyata melalui Netlify AI Gateway: PRD 10 bagian dan SSE complete berhasil. Riwayat setelah login ulang, unduhan Markdown berisi Mermaid, arsip, dan hapus lulus; akun lain ditolak saat membaca, mengubah, atau menghapus dokumen. Seluruh data akun uji dibersihkan.
-- Deployment Netlify terverifikasi: `6afbfe59b1251188aab33860`, source commit `11d645d`.
+- AI nyata melalui Netlify AI Gateway: regresi input `website umkm untuk laundry` dengan detail Lengkap menghasilkan PRD 8 bagian dan SSE complete. Riwayat setelah login ulang, unduhan Markdown berisi Mermaid, arsip, dan hapus lulus; akun lain ditolak saat membaca, mengubah, atau menghapus dokumen. Seluruh data akun uji dibersihkan.
+- Deployment Netlify terverifikasi: `6afc06d9d076562e078b2fd0`, source commit `ff11afe`.
 
 ## Batas verifikasi
 - Pemeriksaan visual langsung di URL Netlify belum selesai karena kontrol browser tidak tersedia; hasil browser di atas berasal dari build lokal sebelumnya.
