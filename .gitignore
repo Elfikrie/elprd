@@ -5,3 +5,6 @@ dist/
 *.log
 .sites-runtime/
 artifacts/
+.netlify/
+.env.*
+!.env.example

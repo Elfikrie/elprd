@@ -1,7 +1,8 @@
 // Klien API opsional; cookie sesi tetap httpOnly dan kunci Anthropic tidak pernah dikirim ke browser.
 import { documentSchema, planSchema, type Plan, type PlanInput } from '../../../packages/shared/schema';
 import { z } from 'zod';
-export const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') || '';
+const configuredUrl = import.meta.env.VITE_API_URL as string | undefined;
+export const API_URL = configuredUrl === 'same-origin' ? window.location.origin : configuredUrl?.replace(/\/$/, '') || '';
 export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(API_URL + path, { ...init, credentials: 'include', headers: { 'Content-Type': 'application/json', ...init.headers } });
   const body: unknown = await response.json();
@@ -32,4 +33,3 @@ export async function streamPlan(input: PlanInput, signal: AbortSignal, onProgre
   if (!result) throw new Error('Koneksi terputus sebelum dokumen selesai. Draf belum disimpan.');
   return result;
 }
-

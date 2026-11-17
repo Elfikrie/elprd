@@ -1,12 +1,13 @@
 // PostgreSQL memakai parameterisasi Drizzle dan filter kepemilikan pada setiap akses plan.
 import postgres from 'postgres';
+import { connectionOptions } from './connection';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import { and, desc, eq, gt, lt, sql } from 'drizzle-orm';
 import { users, sessions, plans, quotas } from './schema';
 import type { Account, Session, Repository } from '../repository';
 import { planSchema, type Plan } from '../../../../packages/shared/schema';
 export function postgresRepository(url: string): Repository & { close: () => Promise<void>; health: () => Promise<void> } {
-  const connection = postgres(url, { max: 10 }); const db = drizzle(connection);
+  const connection = postgres(url, connectionOptions(url)); const db = drizzle(connection);
   return {
     async findAccount(email) { return (await db.select().from(users).where(eq(users.email, email)).limit(1))[0] ?? null; },
     async createAccount(account: Account) { await db.insert(users).values(account); },
@@ -30,8 +31,7 @@ export function postgresRepository(url: string): Repository & { close: () => Pro
       const result = await db.insert(quotas).values({ userId, day, count: 1 }).onConflictDoUpdate({ target: [quotas.userId, quotas.day], set: { count: sql`${quotas.count} + 1` }, setWhere: lt(quotas.count, limit) }).returning();
       return result.length > 0;
     },
-    async health() { await connection`select 1`; },
+    async health() { await connection`select name from rancang.schema_migrations limit 1`; },
     async close() { await connection.end(); },
   };
 }
-

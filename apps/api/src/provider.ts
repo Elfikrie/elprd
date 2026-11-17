@@ -4,9 +4,10 @@ import { documentSchema, type PlanInput, type PrdDocument } from '../../../packa
 import { PRD_PROMPT } from './prompts/prd-v1';
 export interface LlmProvider { generate(input: PlanInput, onDelta: (text: string) => void, signal: AbortSignal): Promise<PrdDocument>; }
 export class AnthropicProvider implements LlmProvider {
-  private client: Anthropic;
-  constructor(key: string, private model: string) { this.client = new Anthropic({ apiKey: key, timeout: 120000, maxRetries: 0 }); }
+  private client: Anthropic | undefined;
+  constructor(private key: string | undefined, private model: string, private baseURL?: string) {}
   async generate(input: PlanInput, onDelta: (text: string) => void, signal: AbortSignal): Promise<PrdDocument> {
+    this.client ??= new Anthropic({ ...(this.key ? { apiKey: this.key } : {}), ...(this.baseURL ? { baseURL: this.baseURL } : {}), timeout: 120000, maxRetries: 0 });
     const stream = this.client.messages.stream({ model: this.model, max_tokens: 10000, system: PRD_PROMPT, messages: [{ role: 'user', content: JSON.stringify(input) }] }, { signal });
     let text = '';
     stream.on('text', chunk => { text += chunk; onDelta(chunk); });
@@ -22,4 +23,3 @@ export class AnthropicProvider implements LlmProvider {
     return document;
   }
 }
-

@@ -46,3 +46,7 @@ Video Seedance belum dibuat. Hero memakai ilustrasi SVG orisinal; petunjuk dan t
 
 Lihat [status dan verifikasi](docs/verification.md), [arsitektur](docs/architecture.md), dan [kontrak API](docs/api.md).
 
+
+## Deployment Netlify dan Supabase
+Entry Netlify Server tersedia di netlify/server/index.ts. Client dan API memakai satu origin; PostgreSQL ditempatkan di schema rancang pada Supabase. Lihat [panduan deployment](docs/netlify-supabase.md) untuk environment, migrasi, dan status aktual.
+

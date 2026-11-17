@@ -11,11 +11,11 @@ import { credentialsSchema, planInputSchema, documentSchema, safeFilename, toMar
 import type { Repository } from './repository';
 import type { LlmProvider } from './provider';
 import { sessionAuth } from './auth';
-export interface AppOptions { repository: Repository; provider: LlmProvider; origin: string; secureCookies?: boolean; dailyLimit?: number; health?: () => Promise<void>; logger?: boolean; }
+export interface AppOptions { repository: Repository; provider: LlmProvider; origin: string; secureCookies?: boolean; dailyLimit?: number; health?: () => Promise<void>; logger?: boolean; cors?: boolean; }
 export async function createApp(options: AppOptions) {
   const app = Fastify({ logger: options.logger ?? false, bodyLimit: 24000, requestTimeout: 150000 });
   const repo = options.repository; const auth = sessionAuth(repo, !!options.secureCookies); const active = new Set<string>();
-  await app.register(cors, { origin: options.origin, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] });
+  if (options.cors !== false) await app.register(cors, { origin: options.origin, credentials: true, methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'] });
   await app.register(cookie); await app.register(helmet);
   await app.register(rateLimit, { max: 120, timeWindow: '1 minute', errorResponseBuilder: () => ({ code: 'RATE_LIMIT', message: 'Terlalu banyak permintaan. Tunggu sebentar.' }) });
   app.addHook('preHandler', async (request, reply) => {
@@ -90,6 +90,3 @@ export async function createApp(options: AppOptions) {
   });
   return app;
 }
-
-
-
