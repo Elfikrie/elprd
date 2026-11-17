@@ -26,18 +26,20 @@ Migrasi membuat schema rancang beserta tabel users, sessions, plans, generation_
 
 Migrasi ini untuk instalasi baru. Bila sebelumnya pernah menjalankan versi awal yang memakai tabel public, data lama tidak dipindahkan atau dihapus secara otomatis. Migrasi data perlu rencana terpisah.
 
-## Langkah deploy setelah akses siap
-1. Otorisasi Netlify CLI sekali melalui login ticket.
-2. Pastikan DATABASE_URL tersedia pada environment production.
-3. Jalankan migrasi dengan environment production, lalu build client/server.
-4. Deploy production ke site ID di atas.
-5. Verifikasi /api/health, daftar/masuk, generate SSE, unduhan, dan riwayat setelah login ulang.
-6. Hubungkan continuous deployment ke branch main jika belum terhubung.
+## Deployment berikutnya
+1. Jalankan `npm test` dan `npm run typecheck`.
+2. Push perubahan ke branch `main`; Netlify membangun di Linux dan mempublikasikan otomatis setelah build berhasil.
+3. Migrasi baru, bila ada, harus dijalankan dengan akun admin melalui Supabase, bukan role runtime `rancang_api`.
+4. Verifikasi `/api/health`, daftar/masuk, generate SSE, unduhan, dan riwayat setelah login ulang.
+
+Folder `.netlify` diabaikan Git; konfigurasi lokal dan kredensial tidak dikirim ke repositori. Perubahan dokumentasi saja dapat memakai `[skip ci]` pada pesan commit agar tidak membuat deployment baru.
 
 Jangan deploy dengan DATABASE_URL kosong: server melakukan validasi awal dan tidak akan mempublikasikan backend yang tidak terkonfigurasi.
 
 ## Validasi yang tersedia
-npm test menjalankan 12 pengujian. Migrasi diuji pada PostgreSQL WASM (PGlite), termasuk foreign key, indeks, RLS, akses role backend, serta penolakan akses publik dan DDL. Uji koneksi Supabase produksi juga lulus: health, CRUD, foreign-key cascade, penolakan CREATE TABLE, dan rollback seluruh data uji. Advisor security dan health tidak melaporkan temuan.
+npm test menjalankan 15 pengujian. Migrasi diuji pada PostgreSQL WASM (PGlite), termasuk foreign key, indeks, RLS, akses role backend, serta penolakan akses publik dan DDL. Uji koneksi Supabase produksi juga lulus: health, CRUD, foreign-key cascade, penolakan CREATE TABLE, dan rollback seluruh data uji. Advisor security dan health tidak melaporkan temuan. Parser AI menerima JSON polos atau satu blok kode JSON lengkap; prosa tambahan, keluaran parsial, struktur tidak valid, dan pola diagram berbahaya tetap ditolak.
 
 ## Status
-Supabase produksi sudah siap dan teruji. CLI Netlify sudah terotorisasi pada akun GitHub pengguna, tim elfikrie. Proyek elprd-rancang dibuat pada tim tersebut dengan DATABASE_URL secret serta konfigurasi produksi tersimpan. Proyek awal elprd pada tim School tidak menjadi target deployment. Publikasi client dan server masih harus diverifikasi melalui build dan smoke test Netlify.
+Client dan server dipublikasikan di https://elprd-rancang.netlify.app pada tim elfikrie. GitHub `Elfikrie/elprd`, branch `main`, sudah terhubung ke continuous deployment. Supabase produksi sudah siap dan teruji. DATABASE_URL tersimpan sebagai secret produksi di elprd-rancang; salinannya pada proyek awal elprd di tim School sudah dihapus dengan persetujuan pemilik. Health database, pendaftaran, login, pencabutan sesi saat logout, serta penolakan Origin asing sudah lulus pengujian HTTP produksi.
+
+Deployment terverifikasi: `6afbfe59b1251188aab33860`, source commit `11d645d`, dipublikasikan 17 November 2026. Generasi Anthropic melalui AI Gateway menghasilkan PRD 10 bagian; streaming selesai, riwayat tersimpan setelah login ulang, ekspor Markdown, pemisahan akses antar akun, arsip, dan hapus seluruhnya lulus. Akun serta dokumen pengujian telah dibersihkan.
